@@ -33,16 +33,18 @@ jobs:
           echo "Using region: $REGION"
           echo "Using log group: $LOG_GROUP_NAME"
 
+          # Generate timestamp
           TS_ISO=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
-          echo "{\"timestamp\":$(date +%s000),\"message\":\"Prod validation passed at $TS_ISO\"}" > event.json
 
+          # Create log stream (ignore if exists)
           aws logs create-log-stream \
             --log-group-name "$LOG_GROUP_NAME" \
             --log-stream-name "$TS_ISO" \
             --region "$REGION" || true
 
+          # Send log event (JSON formatted correctly)
           aws logs put-log-events \
             --log-group-name "$LOG_GROUP_NAME" \
             --log-stream-name "$TS_ISO" \
-            --log-events file://event.json \
+            --log-events "[{\"timestamp\":$(date +%s000),\"message\":\"Prod validation passed at $TS_ISO\"}]" \
             --region "$REGION"
