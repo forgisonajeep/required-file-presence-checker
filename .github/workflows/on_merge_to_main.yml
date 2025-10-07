@@ -1,0 +1,55 @@
+name: Required Files Check (Prod)
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Run file presence check
+        run: python3 check_required_files.py
+
+      - name: Log success to CloudWatch (prod)
+        if: success()
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          LOG_GROUP_NAME: ${{ secrets.LOG_GROUP_NAME }}
+        run: |
+          REGION="${AWS_REGION:-us-east-1}"
+          echo "Using region: $REGION"
+          echo "Using log group: $LOG_GROUP_NAME"
+
+          TS_ISO=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
+          EVENT_JSON=$(cat <<EOF
+          {
+            "logGroupName": "$LOG_GROUP_NAME",
+            "logStreamName": "$TS_ISO",
+            "logEvents": [{
+              "timestamp": $(date +%s000),
+              "message": "Prod validation passed at $TS_ISO"
+            }]
+          }
+          EOF
+          )
+
+          aws logs create-log-group --log-group-name "$LOG_GROUP_NAME" --region "$REGION" || true
+          aws logs create-log-stream --log-group-name "$LOG_GROUP_NAME" --log-stream-name "$TS_ISO" --region "$REGION" || true
+          aws logs put-log-events \
+            --log-group-name "$LOG_GROUP_NAME" \
+            --log-stream-name "$TS_ISO" \
+            --log-events "file://<(echo $EVENT_JSON)" \
+            --region "$REGION"
