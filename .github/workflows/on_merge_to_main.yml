@@ -34,22 +34,15 @@ jobs:
           echo "Using log group: $LOG_GROUP_NAME"
 
           TS_ISO=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
-          EVENT_JSON=$(cat <<EOF
-          {
-            "logGroupName": "$LOG_GROUP_NAME",
-            "logStreamName": "$TS_ISO",
-            "logEvents": [{
-              "timestamp": $(date +%s000),
-              "message": "Prod validation passed at $TS_ISO"
-            }]
-          }
-          EOF
-          )
+          echo "{\"timestamp\":$(date +%s000),\"message\":\"Prod validation passed at $TS_ISO\"}" > event.json
 
-          aws logs create-log-group --log-group-name "$LOG_GROUP_NAME" --region "$REGION" || true
-          aws logs create-log-stream --log-group-name "$LOG_GROUP_NAME" --log-stream-name "$TS_ISO" --region "$REGION" || true
+          aws logs create-log-stream \
+            --log-group-name "$LOG_GROUP_NAME" \
+            --log-stream-name "$TS_ISO" \
+            --region "$REGION" || true
+
           aws logs put-log-events \
             --log-group-name "$LOG_GROUP_NAME" \
             --log-stream-name "$TS_ISO" \
-            --log-events "file://<(echo $EVENT_JSON)" \
+            --log-events file://event.json \
             --region "$REGION"
