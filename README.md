@@ -3,7 +3,7 @@
 
 ---
 
-## 🧩 Project Overview
+##  Project Overview
 This project automates a structural validation process for LevelUp Bank’s repositories.  
 Each service repository must include certain baseline files—like `README.md` and `.gitignore`—before code is merged into the main branch.  
 
@@ -15,9 +15,9 @@ Using **Python** and **GitHub Actions**, this project:
 
 ---
 
-## ⚙️ How It Works – Three Phases of Automation
+##  How It Works – Three Phases of Automation
 
-### 1️⃣ Local Validation (Python Script)
+### 1️ Local Validation (Python Script)
 Before automation, the validation can be tested locally with a simple Python script.
 
 **File:** `check_required_files.py`
@@ -46,7 +46,7 @@ Missing required files:
 
 ---
 
-### 2️⃣ Pull Request Validation (GitHub Actions – Beta Environment)
+### 2️ Pull Request Validation (GitHub Actions – Beta Environment)
 Once local validation works, automation is added using **GitHub Actions**.  
 This workflow runs every time a **pull request** is opened toward the `main` branch.
 
@@ -87,11 +87,11 @@ jobs:
         run: python3 check_required_files.py
 ```
 
-If all required files are present, GitHub marks the check ✅ **Passed** and the PR can be merged.
+If all required files are present, GitHub marks the check  **Passed** and the PR can be merged.
 
 ---
 
-### 3️⃣ Production Validation (Main Merge + CloudWatch Logging)
+### 3️ Production Validation (Main Merge + CloudWatch Logging)
 After a pull request is merged into the `main` branch, another workflow runs to perform the same check in **production mode** and log success to AWS CloudWatch.
 
 **Workflow file:** `.github/workflows/on_merge_to_main.yml`
@@ -146,14 +146,14 @@ jobs:
             --region "$REGION"
 ```
 
-✅ **Example CloudWatch message:**
+ **Example CloudWatch message:**
 ```bash
 Prod validation passed at 2025-10-07T01:15Z
 ```
 
 ---
 
-## 🔐 Setting Up Environments & Secrets
+##  Setting Up Environments & Secrets
 In GitHub → **Settings → Environments**, create two environments:  
 - **beta** (for pull requests)  
 - **prod** (for merges to main)  
@@ -168,7 +168,7 @@ Each must include these secrets:
 
 ---
 
-## 🧪 How to Test the Project
+##  How to Test the Project
 **Local test:**
 ```bash
 1. Run python3 check_required_files.py
@@ -181,7 +181,7 @@ Each must include these secrets:
 1. Create a new branch.
 2. Delete .gitignore temporarily.
 3. Open a pull request → GitHub Actions runs automatically and fails.
-4. Restore .gitignore → push → rerun the workflow → it passes ✅.
+4. Restore .gitignore → push → rerun the workflow → it passes.
 ```
 
 **Main merge test (Prod):**
@@ -193,7 +193,7 @@ Each must include these secrets:
 
 ---
 
-## 🧾 Validation Summary
+##  Validation Summary
 | Phase | Environment | Trigger | Expected Outcome |
 |-------|--------------|----------|------------------|
 | Local | Local terminal | Manual run | Prints missing files or success |
@@ -202,7 +202,7 @@ Each must include these secrets:
 
 ---
 
-## 🧠 Key Takeaways
+##  Key Takeaways
 - Validate repo structure with a single lightweight Python script.  
 - Automate checks with GitHub Actions for both pull requests and merges.  
 - Keep credentials out of code by using GitHub Secrets.  
@@ -211,7 +211,7 @@ Each must include these secrets:
 
 ---
 
-## 👤 Author
+##  Author
 **Cameron A. Parker**  
 LevelUp Bank – Platform Engineering CI/CD Enforcement Project  
 GitHub: [forgisonajeep](https://github.com/forgisonajeep)
