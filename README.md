@@ -146,7 +146,7 @@ jobs:
             --region "$REGION"
 ```
 
- **Example CloudWatch message:**
+**Example CloudWatch message:**
 ```bash
 Prod validation passed at 2025-10-07T01:15Z
 ```
@@ -250,7 +250,7 @@ Prod validation logged to CloudWatch.
 
 ---
 
-### Pro Tip
+###  Pro Tip
 If you’re using AWS CloudWatch for the first time, check your region under **us-east-1 → Log groups → /RequiredFilePresenceChecker** to confirm log delivery.
 
 ---
@@ -310,6 +310,148 @@ Each must include these secrets:
 - Keep credentials out of code by using GitHub Secrets.  
 - Use AWS CloudWatch for a permanent audit trail of successful runs.  
 - Reuse this pattern for any type of repository compliance enforcement.
+
+---
+
+###  Troubleshooting & Common Errors  
+
+Even with the correct setup, small issues can occur during workflow execution.  
+Below are the most common problems and how to resolve them quickly.
+
+---
+
+####  **1. Workflow Doesn’t Appear in the Actions Tab**
+**Cause:**  
+The `.github/workflows/` folder or the `.yml` filenames were misspelled.
+
+**Fix:**  
+- Make sure the folder path is exactly `.github/workflows/` (case-sensitive).  
+- File names must end with `.yml`, not `.yaml.txt` or `.yml.txt`.  
+- Example valid files:  
+  ```
+  .github/workflows/on_pull_request.yml
+  .github/workflows/on_merge_to_main.yml
+  ```
+
+---
+
+####  **2. “No module named aws” or “aws: command not found”**
+**Cause:**  
+The AWS CLI isn’t available in the runner or isn’t configured properly.
+
+**Fix:**  
+Add this step before using any `aws logs` command in your workflow:
+```yaml
+- name: Install AWS CLI
+  run: sudo apt-get install awscli -y
+```
+
+---
+
+####  **3. AWS Access Denied (Missing Credentials)**
+**Cause:**  
+Your GitHub Secrets are not set up or named incorrectly.
+
+**Fix:**  
+Go to **GitHub → Settings → Environments → beta or prod → Secrets** and confirm these four are present:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `AWS_REGION`
+- `LOG_GROUP_NAME`
+
+Make sure the names are identical (case-sensitive).  
+
+---
+
+####  **4. CloudWatch Log Group Doesn’t Show New Entries**
+**Cause:**  
+The log group name or region is incorrect, or AWS permissions are incomplete.
+
+**Fix:**  
+- Verify your IAM user has the **CloudWatchLogsFullAccess** policy.  
+- Check your workflow region:
+  ```bash
+  aws configure list
+  ```
+  It must match your CloudWatch region (for example: `us-east-1`).  
+- Confirm the same log group name exists in AWS CloudWatch under **Logs → Log groups**.
+
+---
+
+####  **5. Workflow Fails Instantly With “Invalid Workflow File”**
+**Cause:**  
+A syntax or spacing error in YAML (even one space can break it).
+
+**Fix:**  
+- Use **2 spaces per indentation level** in all `.yml` files.  
+- Check the YAML using a validator like [yamlchecker.com](https://yamlchecker.com).  
+- Avoid using tabs — GitHub Actions only accepts spaces.
+
+---
+
+####  **6. Workflow Didn’t Trigger on PR or Merge**
+**Cause:**  
+The workflow trigger section might be misconfigured.
+
+**Fix:**  
+Make sure these headers exist in each workflow:
+```yaml
+on:
+  pull_request:
+    branches: [ main ]
+```
+and:
+```yaml
+on:
+  push:
+    branches: [ main ]
+```
+If your branch name isn’t `main`, replace it with the correct one (for example: `master` or `dev`).
+
+---
+
+####  **7. Python Script Fails Even Though Files Exist**
+**Cause:**  
+The script may not be checking the right path.
+
+**Fix:**  
+In your Python file (`check_required_files.py`), make sure the path references the **repo root**, not subfolders:
+```python
+import os
+
+required = ["README.md", ".gitignore"]
+missing = [f for f in required if not os.path.exists(f)]
+```
+If running locally, ensure you’re in the project root before executing:
+```bash
+cd required-file-presence-checker
+python3 check_required_files.py
+```
+
+---
+
+####  **8. “Nothing to Commit” After Editing README**
+**Cause:**  
+Git isn’t tracking changes yet.
+
+**Fix:**  
+Always save the file, then run:
+```bash
+git status
+git add README.md
+git commit -m "Update README with troubleshooting section"
+git push origin main
+```
+
+---
+
+###  **Final Verification Checklist**
+Before submitting your project, verify:
+- [ ] The Python script runs cleanly with all required files present.  
+- [ ] Both workflows appear under the **Actions** tab.  
+- [ ] CloudWatch logs appear in your AWS account.  
+- [ ] Beta and Prod environments have all 4 GitHub secrets configured.  
+- [ ] Your `README.md` is fully updated and formatted correctly.
 
 ---
 
