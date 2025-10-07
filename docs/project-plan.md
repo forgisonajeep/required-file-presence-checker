@@ -3,7 +3,7 @@
 
 ---
 
-## 🧩 Background
+##  Background
 LevelUp Bank’s platform engineering team needs to enforce repository consistency across all service repos.  
 Each repo must include essential baseline files like:
 - `README.md`
@@ -16,7 +16,7 @@ This project implements that system.
 
 ---
 
-## 🎯 Objective
+##  Objective
 Build a CI/CD-driven **Required File Presence Checker** that:
 1. Validates repository structure (required files must exist).  
 2. Blocks pull requests if required files are missing.  
@@ -30,7 +30,7 @@ The project evolves in three tiers:
 
 ---
 
-## ⚙️ Phase 0 – Repository Setup
+##  Phase 0 – Repository Setup
 ### Folder Structure
 At the start of the project, the repository was created with:
 ```
@@ -49,7 +49,7 @@ required-file-presence-checker/
 
 ---
 
-## 🪜 Phase 1 – Foundational (Local Validation)
+##  Phase 1 – Foundational (Local Validation)
 **Goal:** Create and test the core validation logic before automating.
 
 **File:** `check_required_files.py`
@@ -107,7 +107,7 @@ Missing required files:
 
 ---
 
-## 🚀 Phase 2 – Advanced (Pull Request Validation)
+##  Phase 2 – Advanced (Pull Request Validation)
 **Goal:** Automate the validation process on every pull request.
 
 **File:** `.github/workflows/on_pull_request.yml`
@@ -151,7 +151,7 @@ jobs:
 
 ---
 
-## ☁️ Phase 3 – Complex (Merge + AWS CloudWatch Logging)
+##  Phase 3 – Complex (Merge + AWS CloudWatch Logging)
 **Goal:** Log successful production validations to AWS CloudWatch for auditing.
 
 **File:** `.github/workflows/on_merge_to_main.yml`
@@ -181,7 +181,7 @@ Prod validation passed at 2025-10-07T01:15Z
 
 ---
 
-## 🔐 GitHub Secrets & Environments
+##  GitHub Secrets & Environments
 **Environments created:**
 - `beta` → used for pull requests  
 - `prod` → used for main merges  
@@ -194,11 +194,11 @@ Prod validation passed at 2025-10-07T01:15Z
 | `AWS_REGION` | AWS Region | `us-east-1` |
 | `LOG_GROUP_NAME` | CloudWatch Log Group | `/github-actions/required-file-presence-check/prod` |
 
-> 💡 *Never hardcode credentials or regions directly into code or workflows.*
+>  *Never hardcode credentials or regions directly into code or workflows.*
 
 ---
 
-## 🧪 Testing Strategy
+##  Testing Strategy
 | Test Type | Description | Trigger | Expected Result |
 |------------|--------------|----------|----------------|
 | Local Test | Run Python script manually | Terminal | Prints missing files or passes |
@@ -207,7 +207,7 @@ Prod validation passed at 2025-10-07T01:15Z
 
 ---
 
-## 📈 Validation Results
+##  Validation Results
 | Tier | Verified Outcome |
 |------|------------------|
 | Foundational | Script runs locally and detects missing files correctly. |
@@ -216,7 +216,7 @@ Prod validation passed at 2025-10-07T01:15Z
 
 ---
 
-## 🧠 Lessons Learned
+##  Lessons Learned
 - Small scripts can enforce strong structural policies.  
 - GitHub Actions is a simple but powerful CI/CD entry point.  
 - AWS CloudWatch is ideal for audit trails and long-term tracking.  
@@ -224,7 +224,7 @@ Prod validation passed at 2025-10-07T01:15Z
 
 ---
 
-## 👤 Author
+##  Author
 **Cameron A. Parker**  
 LevelUp Bank – Platform Engineering CI/CD Enforcement Project  
 GitHub: [forgisonajeep](https://github.com/forgisonajeep)
