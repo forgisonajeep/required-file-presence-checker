@@ -1,56 +1,116 @@
 # Required File Presence Checker
-### Automated CI/CD Validation and CloudWatch Logging for LevelUp Bank
+LevelUp Bank – CI/CD automation that validates required repository files and logs successful production runs to AWS CloudWatch.
 
-##  Project Overview
-This project simulates **LevelUp Bank’s internal platform engineering policy enforcement system.** It automatically checks whether every service repository contains the required baseline files before code merges into production and logs all successful validation runs to **AWS CloudWatch** for audit visibility.
+## Project Overview
+This repository enforces a baseline structure policy for LevelUp Bank’s engineering teams. It checks that required files (like README.md and .gitignore) exist in each repository. The validation runs locally and in GitHub Actions. Pull requests are blocked if the requirements are not met (beta). Merges to main re-run the check and log a success event to AWS CloudWatch (prod).
 
-##  Objective
-Implement a CI/CD-driven quality gate that:
--  Enforces repository structure standards  
--  Fails pull requests missing required files  
--  Logs successful validation results to **AWS CloudWatch**  
--  Uses environment-specific secrets for **beta** (PRs) and **prod** (merges)
+## Objectives
+- Enforce repository structure standards automatically.
+- Fail pull requests that are missing required files.
+- Log successful production validations to AWS CloudWatch.
+- Keep all credentials in GitHub Secrets (no hardcoding).
 
-##  Project Breakdown
-This project was built in three tiers — **Foundational**, **Advanced**, and **Complex** — each layer expanding on the previous one until full CI/CD automation with AWS CloudWatch logging was achieved.
+## Project Tiers (Foundational → Advanced → Complex)
+FOUNDATIONAL (Python Script)
+- File: check_required_files.py
+- Purpose: verify required files exist at the repo root; print any missing; exit non-zero on failure.
+- Local run and expected output:
+  $ python3 check_required_files.py
+  # Expected success:
+  # All required files are present.
 
-**Foundational Tier:** Focused on creating a simple Python validation script named `check_required_files.py`. This script checks for the presence of required baseline files (e.g., `README.md`, `.gitignore`) and exits with an error if any are missing. Example command and output: `$ python3 check_required_files.py` → `All required files are present.`  
+ADVANCED (GitHub Actions on Pull Requests)
+- File: .github/workflows/on_pull_request.yml
+- Trigger: pull_request → main
+- Purpose: checkout repo, set up Python, run check_required_files.py, and block merges if files are missing.
+- Minimal workflow (YAML):
+  name: Required Files Check (Beta)
+  on:
+    pull_request:
+      branches: [ main ]
+  jobs:
+    validate:
+      runs-on: ubuntu-latest
+      environment: beta
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+            python-version: "3.x"
+        - name: Run file presence check
+          run: python3 check_required_files.py
 
-**Advanced Tier:** Introduced GitHub Actions to automate the validation process. The workflow file `.github/workflows/on_pull_request.yml` runs automatically whenever a pull request is opened. It sets up Python, executes the file presence check, and blocks merges if required files are missing. This ensures every pull request meets repository structure requirements before approval.  
+COMPLEX (GitHub Actions on push to main + CloudWatch logging)
+- File: .github/workflows/on_merge_to_main.yml
+- Trigger: push → main
+- Purpose: re-run validation and, on success, send a log entry to AWS CloudWatch using environment secrets.
+- Minimal workflow (YAML):
+  name: Required Files Check (Prod)
+  on:
+    push:
+      branches: [ main ]
+  jobs:
+    validate:
+      runs-on: ubuntu-latest
+      environment: prod
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+        - name: Set up Python
+          uses: actions/setup-python@v5
+          with:
+            python-version: "3.x"
+        - name: Run file presence check
+          run: python3 check_required_files.py
+        - name: Log success to CloudWatch (prod)
+          if: success()
+          env:
+            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            AWS_REGION: ${{ secrets.AWS_REGION }}
+            LOG_GROUP_NAME: ${{ secrets.LOG_GROUP_NAME }}
+          run: |
+            REGION="${AWS_REGION:-us-east-1}"
+            echo "Using region: $REGION"
+            echo "Using log group: $LOG_GROUP_NAME"
+            TS_ISO=$(date -u +"%Y-%m-%dT%H-%M-%SZ")
+            aws logs create-log-stream \
+              --log-group-name "$LOG_GROUP_NAME" \
+              --log-stream-name "$TS_ISO" \
+              --region "$REGION" || true
+            aws logs put-log-events \
+              --log-group-name "$LOG_GROUP_NAME" \
+              --log-stream-name "$TS_ISO" \
+              --log-events "[{\"timestamp\":$(date +%s000),\"message\":\"Prod validation passed at $TS_ISO\"}]" \
+              --region "$REGION"
+- Example CloudWatch message:
+  Prod validation passed at 2025-10-07T01:15Z
 
-**Complex Tier:** Added AWS CloudWatch logging on successful merges to `main`. The second workflow, `.github/workflows/on_merge_to_main.yml`, runs automatically on `push` to `main`. It validates files again and logs a success event to **AWS CloudWatch** using securely stored GitHub Secrets:
-- `${{ secrets.AWS_ACCESS_KEY_ID }}`
-- `${{ secrets.AWS_SECRET_ACCESS_KEY }}`
-- `${{ secrets.AWS_REGION }}`
-- `${{ secrets.LOG_GROUP_NAME }}`  
+## Environment Secrets (kept in GitHub → Settings → Environments)
+Create an environment named prod (and optionally beta). Add the following secrets (names must match exactly). Do NOT hardcode these in code or workflows; they are read at runtime as ${{ secrets.NAME }}.
+- AWS_ACCESS_KEY_ID → IAM access key ID (from your AWS IAM user)
+- AWS_SECRET_ACCESS_KEY → IAM secret access key (from your AWS IAM user)
+- AWS_REGION → e.g., us-east-1
+- LOG_GROUP_NAME → e.g., /github-actions/required-file-presence-check/prod
 
-Example CloudWatch log entry: `Prod validation passed at 2025-10-07T01:15Z`  
+## How to Run Locally
+1) From repo root (same level as README.md and .gitignore), run:
+   $ python3 check_required_files.py
+2) To test failure: temporarily rename README.md and run again; the script should list missing files and exit non-zero.
 
-##  Technologies Used
-- **Python 3.x**
-- **GitHub Actions**
-- **AWS CloudWatch**
-- **IAM + Secrets Management**
-- **Bash scripting**
+## How to Trigger in CI
+- Beta validation: open a pull request to main (on_pull_request.yml runs).
+- Prod validation + logging: push/merge to main (on_merge_to_main.yml runs and logs to CloudWatch).
 
-##  Validation Summary
-| Tier | Description | Verification |
-|------|--------------|---------------|
-| Foundational | Local Python script to verify required files | Ran locally → “All required files are present.” |
-| Advanced | GitHub Actions PR validation | Triggered on pull requests to `demo/pr-1` |
-| Complex | Prod logging to CloudWatch | Triggered on merge to `main`, logs success event to AWS CloudWatch |
+## Technologies Used
+Python 3.x, GitHub Actions, AWS CloudWatch, IAM, GitHub Secrets.
 
-##  Final Results
- **All three tiers completed and validated successfully:** Foundational Python script functional, Advanced PR automation working, and Complex CloudWatch logging confirmed (prod environment).  
+## Validation Summary
+- Foundational: local script passes when required files are present.
+- Advanced: PR workflow blocks merges if required files are missing.
+- Complex: production workflow logs success to CloudWatch using environment secrets.
 
-**CloudWatch Log Group:** `/github-actions/required-file-presence-check/prod`  
-
-**Validation Workflow Runs (GitHub Actions):**
--  `Fix CloudWatch JSON formatting for prod logging` — success  
--  `Required Files Check (Prod)` — passing on merge to main  
--  `Required Files Check (Beta)` — passing on pull request  
-
-##  Author
-**Cameron A. Parker**  
-_LevelUp Bank – Platform Engineering CI/CD Enforcement Project_  
-GitHub: [forgisonajeep](https://github.com/forgisonajeep)
+## Author
+Cameron A. Parker — LevelUp Bank, Platform Engineering CI/CD Enforcement Project — https://github.com/forgisonajeep
