@@ -61,7 +61,7 @@ This workflow runs every time a **pull request** is opened toward the `main` bra
 1. The code is checked out.  
 2. Python is set up in the runner.  
 3. The script runs automatically.  
-4. If validation fails, the pull request shows an ❌ failure.
+4. If validation fails, the pull request shows a failure.
 
 **Example workflow:**
 ```yaml
