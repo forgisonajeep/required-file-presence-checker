@@ -61,7 +61,7 @@ This workflow runs every time a **pull request** is opened toward the `main` bra
 1. The code is checked out.  
 2. Python is set up in the runner.  
 3. The script runs automatically.  
-4. If validation fails, the pull request shows a failure.
+4. If validation fails, the pull request shows an ❌ failure.
 
 **Example workflow:**
 ```yaml
@@ -87,7 +87,7 @@ jobs:
         run: python3 check_required_files.py
 ```
 
-If all required files are present, GitHub marks the check  **Passed** and the PR can be merged.
+If all required files are present, GitHub marks the check ✅ **Passed** and the PR can be merged.
 
 ---
 
@@ -153,6 +153,108 @@ Prod validation passed at 2025-10-07T01:15Z
 
 ---
 
+##  Repository Structure
+```bash
+required-file-presence-checker/
+├── .github/
+│   └── workflows/
+│       ├── on_pull_request.yml       # Validates required files on pull requests (Beta)
+│       └── on_merge_to_main.yml      # Logs validation success to CloudWatch (Prod)
+│
+├── docs/
+│   └── project-plan.md               # Full breakdown of project phases and design reasoning
+│
+├── check_required_files.py           # Python script enforcing required file presence
+├── .gitignore                        # Git ignore patterns
+└── README.md                         # Main project documentation
+```
+
+---
+
+###  How to Navigate the Repo
+This repository is organized to mirror real-world DevOps workflow stages — **Foundational → Advanced → Complex** — each tier building on the previous one:
+
+- ** Foundational:**  
+  Focuses on the Python validation script (`check_required_files.py`) and basic GitHub repository setup.  
+  You’ll see how the script enforces required files and ensures a project’s baseline structure before code review.
+
+- ** Advanced:**  
+  Introduces **GitHub Actions automation** through `.github/workflows/on_pull_request.yml`.  
+  This workflow automatically runs the validation script whenever a **pull request** is opened to the `main` branch, enforcing structure compliance in the **Beta** environment.
+
+- ** Complex:**  
+  Extends the automation to include **AWS CloudWatch logging** via `.github/workflows/on_merge_to_main.yml`.  
+  This ensures all successful validations are logged to a CloudWatch group (for **Prod** auditing), providing visibility into repository compliance events.
+
+Each directory and file directly supports one of these tiers:
+- `/` → Foundational  
+- `.github/workflows/` → Advanced + Complex  
+- `/docs/` → Supporting documentation and long-form project plan  
+
+Together, these components demonstrate a **complete CI/CD quality gate system** — from local validation to cloud-based audit logging — all driven by GitHub Actions.
+
+---
+
+###  Quick Start
+
+Follow these steps to explore and test the **Required File Presence Checker** project locally and through GitHub Actions:
+
+#### 1. **Clone the Repository**
+```bash
+git clone https://github.com/forgisonajeep/required-file-presence-checker.git
+cd required-file-presence-checker
+```
+
+#### 2. **Run the Validation Script Locally**
+Before using GitHub Actions, verify the Python script locally:
+```bash
+python3 check_required_files.py
+```
+Expected output (if all required files exist):
+```
+All required files are present.
+```
+
+If any are missing, you’ll see a list like:
+```
+Missing required files:
+- README.md
+- .github/workflows/on_pull_request.yml
+```
+
+#### 3. **Trigger the GitHub Actions Workflows**
+The repository has **two automated workflows**:
+
+| Workflow | Trigger | Purpose |
+|-----------|----------|----------|
+| `.github/workflows/on_pull_request.yml` | When a pull request is opened | Validates required files in **Beta** environment. |
+| `.github/workflows/on_merge_to_main.yml` | When code merges to main | Logs successful validation results to **AWS CloudWatch (Prod)**. |
+
+To test:
+1. Create a new branch and make a small change.  
+2. Open a **Pull Request** → triggers Beta validation.  
+3. Merge into **main** → triggers Prod CloudWatch logging.
+
+#### 4. **View Results**
+- Go to the **Actions tab** in GitHub.  
+- Select the latest workflow run to view validation results and CloudWatch logging output.  
+
+---
+
+###  Example Success Output
+```bash
+All required files are present.
+Beta validation passed.
+Prod validation logged to CloudWatch.
+```
+
+---
+
+### Pro Tip
+If you’re using AWS CloudWatch for the first time, check your region under **us-east-1 → Log groups → /RequiredFilePresenceChecker** to confirm log delivery.
+
+---
+
 ##  Setting Up Environments & Secrets
 In GitHub → **Settings → Environments**, create two environments:  
 - **beta** (for pull requests)  
@@ -164,7 +266,7 @@ Each must include these secrets:
 - `AWS_REGION` → region (example: `us-east-1`)  
 - `LOG_GROUP_NAME` → CloudWatch log group (example: `/github-actions/required-file-presence-check/prod`)
 
-> 💡 **Note:** No credentials or region names should ever appear directly in your code or YAML files.
+>  **Note:** No credentials or region names should ever appear directly in your code or YAML files.
 
 ---
 
@@ -181,7 +283,7 @@ Each must include these secrets:
 1. Create a new branch.
 2. Delete .gitignore temporarily.
 3. Open a pull request → GitHub Actions runs automatically and fails.
-4. Restore .gitignore → push → rerun the workflow → it passes.
+4. Restore .gitignore → push → rerun the workflow → it passes ✅.
 ```
 
 **Main merge test (Prod):**
